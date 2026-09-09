@@ -1,0 +1,6 @@
+export enum UserRole {
+  SUPER_ADMIN = "SUPER_ADMIN",
+  CENTRE_ADMIN = "CENTRE_ADMIN",
+  TEACHER = "TEACHER",
+  PARENT = "PARENT"
+}
