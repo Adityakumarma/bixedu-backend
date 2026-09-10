@@ -47,4 +47,7 @@ UserSchema.methods.comparePassword = async function (candidatePassword: string):
   return bcrypt.compare(candidatePassword, this.password);
 };
 
+UserSchema.index({ centreId: 1 });
+
 export const User = model<IUser>("User", UserSchema);
+
