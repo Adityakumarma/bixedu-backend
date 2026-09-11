@@ -1,14 +1,29 @@
 import { Router } from "express";
-import { authenticate } from "../middleware/auth.middleware";
+import { authenticate, authorize } from "../middleware/auth.middleware";
 import { validateTenant } from "../middleware/tenant.middleware";
-import { sendSuccess } from "../utils/response.utils";
+import { UserRole } from "../constants/roles";
+import {
+  getBatches,
+  getBatchById,
+  createBatch,
+  updateBatch,
+  updateBatchStatus,
+  deleteBatch,
+  assignStudentToBatch,
+  removeStudentFromBatch
+} from "../controllers/batches.controller";
 
 const router = Router();
 
 router.use(authenticate, validateTenant);
 
-router.get("/", (_req, res) => {
-  sendSuccess(res, "Batches module endpoint ready", []);
-});
+router.get("/", getBatches);
+router.get("/:id", getBatchById);
+router.post("/", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMIN), createBatch);
+router.put("/:id", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMIN), updateBatch);
+router.patch("/:id/status", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMIN), updateBatchStatus);
+router.delete("/:id", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMIN), deleteBatch);
+router.post("/:id/students", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMIN), assignStudentToBatch);
+router.delete("/:id/students/:studentId", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMIN), removeStudentFromBatch);
 
 export default router;

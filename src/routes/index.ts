@@ -13,12 +13,17 @@ import reportsRoutes from "./reports.routes";
 import subscriptionsRoutes from "./subscriptions.routes";
 import { getHealthStatus } from "../controllers/health.controller";
 
+import { authenticate } from "../middleware/auth.middleware";
+import { validateTenant } from "../middleware/tenant.middleware";
+import { getDashboardStats } from "../controllers/dashboard.controller";
+
 const router = Router();
 
 router.get("/health", getHealthStatus);
 
 router.use("/auth", authRoutes);
 router.use("/centres", centresRoutes);
+router.get("/dashboard/stats", authenticate, validateTenant, getDashboardStats);
 router.use("/students", studentsRoutes);
 router.use("/parents", parentsRoutes);
 router.use("/batches", batchesRoutes);

@@ -4,7 +4,8 @@ import { sendError } from "../utils/response.utils";
 import { HttpStatus } from "../constants/http-status";
 
 export const validateTenant = (req: Request, res: Response, next: NextFunction): void => {
-  const headerCentreId = req.headers["x-centre-id"] as string;
+  const rawHeader = req.headers["x-centre-id"];
+  const headerCentreId = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
 
   if (req.user) {
     if (req.user.role === UserRole.SUPER_ADMIN) {
