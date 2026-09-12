@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { Batch } from "../models/Batch";
 import { Student } from "../models/Student";
+import { User } from "../models/User";
+import { UserRole } from "../constants/roles";
 import { sendSuccess, sendError } from "../utils/response.utils";
 import { HttpStatus } from "../constants/http-status";
 import { Types } from "mongoose";
@@ -28,6 +30,11 @@ export const getBatches = async (req: Request, res: Response): Promise<void> => 
   const status = req.query.status as string;
 
   const query: any = { centreId };
+
+  // Role restriction: TEACHER sees only their assigned batches
+  if (req.user && req.user.role === UserRole.TEACHER) {
+    query.teacherIds = new Types.ObjectId(req.user.id);
+  }
 
   if (status) {
     query.status = status;
@@ -378,3 +385,76 @@ export const removeStudentFromBatch = async (req: Request, res: Response): Promi
 
   sendSuccess(res, "Student removed from batch successfully", { studentId, batchId: id });
 };
+
+export const assignTeacherToBatch = async (req: Request, res: Response): Promise<void> => {
+  const centreIdStr = getCentreIdStr(req);
+  const { id } = req.params;
+  const { teacherId } = req.body;
+
+  if (!centreIdStr || !Types.ObjectId.isValid(centreIdStr)) {
+    sendError(res, "Centre context missing or invalid", HttpStatus.BAD_REQUEST);
+    return;
+  }
+  const centreId = new Types.ObjectId(centreIdStr);
+
+  if (!id || !Types.ObjectId.isValid(String(id)) || !teacherId || !Types.ObjectId.isValid(String(teacherId))) {
+    sendError(res, "Invalid batch or teacher ID format", HttpStatus.BAD_REQUEST);
+    return;
+  }
+
+  const batch = await Batch.findOne({ _id: new Types.ObjectId(String(id)), centreId: centreId as any });
+  if (!batch) {
+    sendError(res, "Batch not found or does not belong to your centre", HttpStatus.NOT_FOUND);
+    return;
+  }
+
+  const teacher = await User.findOne({ _id: new Types.ObjectId(String(teacherId)), centreId: centreId as any, isActive: true });
+  if (!teacher) {
+    sendError(res, "Teacher / Staff user not found or does not belong to your centre", HttpStatus.NOT_FOUND);
+    return;
+  }
+
+  const teacherObjId = teacher._id as Types.ObjectId;
+  const exists = (batch.teacherIds || []).some(tId => tId.toString() === teacherObjId.toString());
+  if (exists) {
+    sendError(res, "Teacher is already assigned to this batch", HttpStatus.BAD_REQUEST);
+    return;
+  }
+
+  batch.teacherIds = [...(batch.teacherIds || []), teacherObjId];
+  await batch.save();
+
+  sendSuccess(res, `Teacher '${teacher.name}' assigned to batch '${batch.name}'`, {
+    batchId: batch._id,
+    teacherId: teacher._id
+  });
+};
+
+export const removeTeacherFromBatch = async (req: Request, res: Response): Promise<void> => {
+  const centreIdStr = getCentreIdStr(req);
+  const { id, teacherId } = req.params;
+
+  if (!centreIdStr || !Types.ObjectId.isValid(centreIdStr)) {
+    sendError(res, "Centre context missing or invalid", HttpStatus.BAD_REQUEST);
+    return;
+  }
+  const centreId = new Types.ObjectId(centreIdStr);
+
+  if (!id || !Types.ObjectId.isValid(String(id)) || !teacherId || !Types.ObjectId.isValid(String(teacherId))) {
+    sendError(res, "Invalid batch or teacher ID format", HttpStatus.BAD_REQUEST);
+    return;
+  }
+
+  const batch = await Batch.findOne({ _id: new Types.ObjectId(String(id)), centreId: centreId as any });
+  if (!batch) {
+    sendError(res, "Batch not found or does not belong to your centre", HttpStatus.NOT_FOUND);
+    return;
+  }
+
+  const tStr = String(teacherId);
+  batch.teacherIds = (batch.teacherIds || []).filter(tId => tId.toString() !== tStr);
+  await batch.save();
+
+  sendSuccess(res, "Teacher removed from batch successfully", { batchId: id, teacherId });
+};
+

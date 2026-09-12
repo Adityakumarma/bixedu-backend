@@ -10,7 +10,9 @@ import {
   updateBatchStatus,
   deleteBatch,
   assignStudentToBatch,
-  removeStudentFromBatch
+  removeStudentFromBatch,
+  assignTeacherToBatch,
+  removeTeacherFromBatch
 } from "../controllers/batches.controller";
 
 const router = Router();
@@ -25,5 +27,7 @@ router.patch("/:id/status", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMI
 router.delete("/:id", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMIN), deleteBatch);
 router.post("/:id/students", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMIN), assignStudentToBatch);
 router.delete("/:id/students/:studentId", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMIN), removeStudentFromBatch);
+router.post("/:id/teachers", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMIN), assignTeacherToBatch);
+router.delete("/:id/teachers/:teacherId", authorize(UserRole.SUPER_ADMIN, UserRole.CENTRE_ADMIN), removeTeacherFromBatch);
 
 export default router;
